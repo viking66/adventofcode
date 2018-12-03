@@ -7,15 +7,11 @@ import System.Environment (getArgs)
 import Text.Printf (printf)
 
 import Types
-import Day01 (day01)
-import Day02 (day02)
-import Day03 (day03)
+import Solutions
 
 solutionMap :: Map Int (String -> Showable)
 solutionMap = fromList
-  [ (1, day01)
-  , (2, day02)
-  , (3, day03)
+  [ (1, day01) , (2, day02) , (3, day03)
   -- , (4, day04)
   -- , (5, day05)
   -- , (6, day06)

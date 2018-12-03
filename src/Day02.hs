@@ -3,6 +3,8 @@ module Day02 (day02) where
 import Data.List (group, sort)
 import qualified Data.Set as Set
 
+import Types
+
 data ChecksumElem = Zero | Pair | Triplet | Both
 
 idToChecksumElem :: String -> ChecksumElem
@@ -27,17 +29,17 @@ drop1 xs = [drop1' i xs | i <- [0..length xs - 1]]
         drop1' i xs = let (as, bs) = splitAt i xs
                       in case bs of
                            [] -> (as, bs)
-                           (c:cs) -> (as, cs)
+                           (_:cs) -> (as, cs)
 
 findMatch :: [(String, String)] -> Maybe (String, String)
 findMatch = findMatch' Set.empty
-  where findMatch' s [] = Nothing
+  where findMatch' _ [] = Nothing
         findMatch' s (x:xs) = if Set.member x s
                               then Just x
                               else findMatch' (Set.insert x s) xs
 
-day02 :: String -> (Int, String)
+day02 :: String -> Showable
 day02 s = let xs = lines s
               checksum = calcChecksum $ map idToChecksumElem $ xs
               match = maybe "" (uncurry (++)) $ findMatch $ concatMap drop1 xs
-          in (checksum, match)
+          in pack (checksum, match)

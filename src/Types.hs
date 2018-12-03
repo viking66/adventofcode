@@ -4,8 +4,8 @@ module Types where
 
 data Showable = forall a . Show a => MakeShowable a
 
+instance Show Showable where
+  show (MakeShowable s) = show s
+
 pack :: Show a => a -> Showable
 pack = MakeShowable
-
-putShowable :: Showable -> IO ()
-putShowable (MakeShowable s) = putStrLn $ show s

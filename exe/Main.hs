@@ -26,8 +26,14 @@ getSolution = maybe noSol getSolution'
         getSolution' :: Int -> IO Showable
         getSolution' n = maybe noSol (uncurry eval) (lookup n solutionMap)
 
+putSolution :: Maybe Int -> Showable -> IO ()
+putSolution Nothing s = putStrLn $ show s
+putSolution (Just n) s = putStrLn $ show n ++ ": " ++ show s
+
+evalPrint :: Maybe Int -> IO ()
+evalPrint n = getSolution n >>= putSolution n
+
 main :: IO ()
 main = getArgs >>= go
--- main = getArgs >>= go >>= mapM_ putShowable
-  where go [] = getSolution (fst <$> lookupMax solutionMap) >>= putShowable
-        go xs = mapM_ ((>>= putShowable) . getSolution . Just . read) xs
+  where go [] = evalPrint (fst <$> lookupMax solutionMap)
+        go xs = mapM_ (evalPrint . Just . read) xs

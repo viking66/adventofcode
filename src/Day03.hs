@@ -26,16 +26,16 @@ parseLine s = fst <$> runParser claimParser s
 parseInput :: String -> Maybe [Claim]
 parseInput = traverse parseLine . lines
 
-claimIdxs :: Claim -> [(Int, Int)]
-claimIdxs (Claim _ x y xl yl) = [(a,b) | a <- [x..x+xl-1], b <- [y..y+yl-1]]
+claimIdxs :: Claim -> [(Int, Int, Int)]
+claimIdxs (Claim i x y xl yl) = [(i,a,b) | a <- [x..x+xl-1], b <- [y..y+yl-1]]
 
-claimIdxMap :: [Claim] -> Map (Int, Int) Int
+claimIdxMap :: [Claim] -> Map (Int, Int) [Int]
 claimIdxMap = foldr f Map.empty . concatMap claimIdxs
-  where f k = Map.insertWithKey g k 1
-        g _ new old = new + old
+  where f (i,x,y) = Map.insertWithKey g (x,y) [i]
+        g _ new old = new ++ old
 
 countOverlap :: [Claim] -> Int
-countOverlap = length . filter (>1) . Map.elems . claimIdxMap
+countOverlap = length . filter ((>1) . length) . Map.elems . claimIdxMap
 
 day03 :: String -> Showable
 day03 = maybe (pack "Failed to parse input") (pack . countOverlap) . parseInput

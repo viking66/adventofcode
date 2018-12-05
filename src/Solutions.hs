@@ -2,8 +2,8 @@ module Solutions
   ( day01
   , day02
   , day03
-  -- , day04
-  -- , day05
+  , day04
+  , day05
   -- , day06
   -- , day07
   -- , day08
@@ -29,8 +29,8 @@ module Solutions
 import Day01 (day01)
 import Day02 (day02)
 import Day03 (day03)
--- import Day04 (day04)
--- import Day05 (day05)
+import Day04 (day04)
+import Day05 (day05)
 -- import Day06 (day06)
 -- import Day07 (day07)
 -- import Day08 (day08)

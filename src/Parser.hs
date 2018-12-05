@@ -56,3 +56,9 @@ space = char ' '
 
 spaces :: Parser [Char]
 spaces = many space
+
+sequenceParser :: [Parser a] -> Parser [a]
+sequenceParser = foldr (liftA2 (:)) (pure [])
+
+string :: String -> Parser String
+string = sequenceParser . map char

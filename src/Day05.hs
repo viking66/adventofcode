@@ -1,7 +1,6 @@
 module Day05 (day05) where
 
 import Data.Char (toLower, toUpper)
-import Data.Set (Set)
 import qualified Data.Set as Set
 
 import Types

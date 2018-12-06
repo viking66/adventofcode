@@ -16,7 +16,7 @@ extra-source-files:  CHANGELOG.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Day01, Day02, Day03, Day04, Day05
+  exposed-modules:     Day01, Day02, Day03, Day04, Day05, Day06
                      , Parser, Solutions, Types
   -- other-modules:
   -- other-extensions:

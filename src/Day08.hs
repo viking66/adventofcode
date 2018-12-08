@@ -6,37 +6,29 @@ import Types
 
 type IntTree = Tree [Int]
 
-foo :: [Int] -> (IntTree, [Int])
-foo (0:y:ys) = (Node (take y ys) [], drop y ys)
-foo (x:y:ys) = let (ts, zs) = bar x ys
-               in (Node (take y zs) ts, drop y zs)
+makeTree :: [Int] -> (IntTree, [Int])
+makeTree (0:y:ys) = (Node (take y ys) [], drop y ys)
+makeTree (x:y:ys) = let (ts, zs) = makeForest x ys
+                    in (Node (take y zs) ts, drop y zs)
+  where makeForest 0 xs = ([], xs)
+        makeForest n xs = let (t, ys) = makeTree xs
+                          in appendTree t (makeForest (n - 1) ys)
+        appendTree t (ts, ns) = (t:ts, ns)
+makeTree _ = (Node [] [], [])
 
-bar :: Int -> [Int] -> ([IntTree], [Int])
-bar 0 xs = ([], xs)
-bar n xs = let (t, ys) = foo xs
-           in baz t (bar (n - 1) ys)
-
-baz :: IntTree -> ([IntTree], [Int]) -> ([IntTree], [Int])
-baz t (ts, ns) = (t:ts, ns)
-
-qux :: [Int] -> [Int] -> Int
-qux as bs = sum (as ++ bs)
-
-rambutan :: [IntTree] -> Int -> Int
-rambutan xs n = if n > length xs
-                then 0
-                else bam (xs !! (n - 1))
-
-bam :: IntTree -> Int
-bam (Node xs []) = sum xs
-bam (Node xs ys) = sum (map (rambutan ys) xs)
+nodeValue :: IntTree -> Int
+nodeValue (Node xs []) = sum xs
+nodeValue (Node xs ys) = sum (map (childValue ys) xs)
+  where childValue xs n = if n > length xs
+                          then 0
+                          else nodeValue (xs !! (n - 1))
 
 parseInput :: String -> [Int]
 parseInput = map read . words
 
 go :: [Int] -> (Int, Int)
-go xs = let t = fst (foo xs)
-        in (foldTree qux t, bam t)
+go xs = let t = fst (makeTree xs)
+        in (foldTree (\as bs -> sum (as++bs)) t, nodeValue t)
 
 day08 :: String -> Showable
 day08 = pack . go . parseInput

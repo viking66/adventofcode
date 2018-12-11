@@ -49,7 +49,7 @@ digits :: Parser [Char]
 digits = many digit
 
 number :: Parser Int
-number = read <$> digits
+number = read <$> (((:) <$> char '-' <*> digits) <|> digits)
 
 space :: Parser Char
 space = char ' '

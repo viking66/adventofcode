@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Day01, Day02, Day03, Day04, Day05, Day06, Day07,
-                       Day08, Day09, Day10
+                       Day08, Day09, Day10, Day11
                      , Parser, Solutions, Types
   -- other-modules:
   -- other-extensions:

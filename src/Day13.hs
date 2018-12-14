@@ -21,13 +21,13 @@ data Turn = LTurn | Straight | RTurn
 data Coord = Coord Int Int
   deriving (Show, Eq)
 
-data CartNav = CartNav Cart Coord [Turn]
+data CartNav = CartNav Cart Coord [Turn] Coord
   deriving Eq
 
 data Track = Track (Map Coord Path) [CartNav]
   deriving Show
 
-data TickResult = Crash Coord | TickResult Track
+data TickResult = Crash Track [(Coord, Coord)] | TickResult Track
 
 instance Show Path where
   show NS = "|"
@@ -48,17 +48,14 @@ instance Show TrackElement where
   show (TrackCart c) = show c
 
 instance Show CartNav where
-  show (CartNav cart coord turns) =
-    "CartNav " ++ (show cart) ++ " " ++ show coord ++ " " ++ show (take 3 turns)
+  show (CartNav cart coord turns i) =
+    "CartNav " ++ (show cart) ++ " " ++ show coord ++ " " ++ show (take 3 turns) ++ " Id: " ++ (show i)
 
 instance Ord Coord where
   compare (Coord x y) (Coord a b) = compare y b <> compare x a
 
 instance Ord CartNav where
-  compare (CartNav _ a _) (CartNav _ b _) = compare a b
-
-cartNavCoord :: CartNav -> Coord
-cartNavCoord (CartNav _ c _) = c
+  compare (CartNav _ a _ _ ) (CartNav _ b _ _) = compare a b
 
 parsePath :: Parser Path
 parsePath = const NS <$> char '|'
@@ -97,49 +94,47 @@ west :: Coord -> Coord
 west (Coord x y) = Coord (x-1) y
 
 intersection :: CartNav -> CartNav
-intersection c@(CartNav _ _ []) = c
-intersection (CartNav NCart coord (LTurn:xs)) = CartNav WCart (west coord) xs
-intersection (CartNav NCart coord (Straight:xs)) = CartNav NCart (north coord) xs
-intersection (CartNav NCart coord (RTurn:xs)) = CartNav ECart (east coord) xs
-intersection (CartNav SCart coord (LTurn:xs)) = CartNav ECart (east coord) xs
-intersection (CartNav SCart coord (Straight:xs)) = CartNav SCart (south coord) xs
-intersection (CartNav SCart coord (RTurn:xs)) = CartNav WCart (west coord) xs
-intersection (CartNav ECart coord (LTurn:xs)) = CartNav NCart (north coord) xs
-intersection (CartNav ECart coord (Straight:xs)) = CartNav ECart (east coord) xs
-intersection (CartNav ECart coord (RTurn:xs)) = CartNav SCart (south coord) xs
-intersection (CartNav WCart coord (LTurn:xs)) = CartNav SCart (south coord) xs
-intersection (CartNav WCart coord (Straight:xs)) = CartNav WCart (west coord) xs
-intersection (CartNav WCart coord (RTurn:xs)) = CartNav NCart (north coord) xs
+intersection c@(CartNav _ _ [] _) = c
+intersection (CartNav NCart coord (LTurn:xs) i) = CartNav WCart (west coord) xs i
+intersection (CartNav NCart coord (Straight:xs) i) = CartNav NCart (north coord) xs i
+intersection (CartNav NCart coord (RTurn:xs) i) = CartNav ECart (east coord) xs i
+intersection (CartNav SCart coord (LTurn:xs) i) = CartNav ECart (east coord) xs i
+intersection (CartNav SCart coord (Straight:xs) i) = CartNav SCart (south coord) xs i
+intersection (CartNav SCart coord (RTurn:xs) i) = CartNav WCart (west coord) xs i
+intersection (CartNav ECart coord (LTurn:xs) i) = CartNav NCart (north coord) xs i
+intersection (CartNav ECart coord (Straight:xs) i) = CartNav ECart (east coord) xs i
+intersection (CartNav ECart coord (RTurn:xs) i) = CartNav SCart (south coord) xs i
+intersection (CartNav WCart coord (LTurn:xs) i) = CartNav SCart (south coord) xs i
+intersection (CartNav WCart coord (Straight:xs) i) = CartNav WCart (west coord) xs i
+intersection (CartNav WCart coord (RTurn:xs) i) = CartNav NCart (north coord) xs i
 
 newLocation :: Map Coord Path -> CartNav -> CartNav
-newLocation m n@(CartNav cart coord turns) =
+newLocation m n@(CartNav cart coord turns i) =
   case (Map.findWithDefault Empty coord m, cart) of
-    (NS, NCart) -> CartNav NCart (north coord) turns
-    (NS, SCart) -> CartNav SCart (south coord) turns
-    (EW, ECart) -> CartNav ECart (east coord) turns
-    (EW, WCart) -> CartNav WCart (west coord) turns
-    (RP, NCart) -> CartNav ECart (east coord) turns
-    (RP, SCart) -> CartNav WCart (west coord) turns
-    (RP, ECart) -> CartNav NCart (north coord) turns
-    (RP, WCart) -> CartNav SCart (south coord) turns
-    (LP, NCart) -> CartNav WCart (west coord) turns
-    (LP, SCart) -> CartNav ECart (east coord) turns
-    (LP, ECart) -> CartNav SCart (south coord) turns
-    (LP, WCart) -> CartNav NCart (north coord) turns
+    (NS, NCart) -> CartNav NCart (north coord) turns i
+    (NS, SCart) -> CartNav SCart (south coord) turns i
+    (EW, ECart) -> CartNav ECart (east coord) turns i
+    (EW, WCart) -> CartNav WCart (west coord) turns i
+    (RP, NCart) -> CartNav ECart (east coord) turns i
+    (RP, SCart) -> CartNav WCart (west coord) turns i
+    (RP, ECart) -> CartNav NCart (north coord) turns i
+    (RP, WCart) -> CartNav SCart (south coord) turns i
+    (LP, NCart) -> CartNav WCart (west coord) turns i
+    (LP, SCart) -> CartNav ECart (east coord) turns i
+    (LP, ECart) -> CartNav SCart (south coord) turns i
+    (LP, WCart) -> CartNav NCart (north coord) turns i
     (Intersection, _) -> intersection n
     (_, _) -> n
 
-findAccident :: [(CartNav, [CartNav])] -> Maybe Coord
-findAccident xs = maybe (postTickCrash xs) Just $ midTickCrash xs
-  where midTickCrash = foldl f Nothing
-        postTickCrash = findCrash . sort . map (cartNavCoord . fst)
-        findCrash (x:y:zs) = if x == y then Just x else findCrash (y:zs)
-        findCrash _ = Nothing
-        f Nothing (c, cs) =
-          let c' = cartNavCoord c
-              cs' = map cartNavCoord cs
-          in if c' `elem` cs' then Just c' else Nothing
-        f jc _ = jc
+findCrashes :: [(CartNav, [CartNav])] -> [(Coord, Coord)]
+findCrashes xs = (midTickCrash xs) ++ (postTickCrash (map fst xs))
+  where midTickCrash = foldl f []
+        f ids (c, cs) = crashIds c cs ++ ids
+        postTickCrash [] = []
+        postTickCrash (x:xs) = (crashIds x xs) ++ (postTickCrash xs)
+        crashIds _ [] = []
+        crashIds x@(CartNav _ c _ i) ((CartNav _ c' _ i'):xs) =
+          if c /= c' then crashIds x xs else (i,c):(i',c):(crashIds x xs)
 
 notCrash :: TickResult -> Bool
 notCrash (TickResult _) = True
@@ -147,13 +142,17 @@ notCrash _ = False
 
 showResult :: TickResult -> Showable
 showResult (TickResult x) = pack x
-showResult (Crash x) = pack x
+showResult (Crash _ []) = pack "Unexpected state"
+showResult (Crash _ ((_, x):_)) = pack x
 
 tick :: TickResult -> TickResult
-tick c@(Crash _) = c
+tick c@(Crash _ _) = c
 tick (TickResult (Track m xs)) = let moves = tick' m (sort xs)
                                      track = Track m (map fst moves)
-                                 in maybe (TickResult track) Crash (findAccident moves)
+                                     crashes = findCrashes moves
+                                 in if null crashes
+                                    then (TickResult track)
+                                    else Crash track crashes
   where tick' _ [] = []
         tick' m (x:xs) = (newLocation m x, xs) : (tick' m xs)
 
@@ -161,17 +160,29 @@ initTrack :: [(Coord, TrackElement)] -> Track
 initTrack = foldr f (Track Map.empty [])
   where turns = cycle [LTurn, Straight, RTurn]
         f (c, (TrackPath p)) (Track m xs) = Track (Map.insert c p m) xs
-        f (c, (TrackCart NCart)) (Track m xs) = Track (Map.insert c NS m) (CartNav NCart c turns : xs)
-        f (c, (TrackCart SCart)) (Track m xs) = Track (Map.insert c NS m) (CartNav SCart c turns : xs)
-        f (c, (TrackCart ECart)) (Track m xs) = Track (Map.insert c EW m) (CartNav ECart c turns : xs)
-        f (c, (TrackCart WCart)) (Track m xs) = Track (Map.insert c EW m) (CartNav WCart c turns : xs)
+        f (c, (TrackCart NCart)) (Track m xs) = Track (Map.insert c NS m) (CartNav NCart c turns c : xs)
+        f (c, (TrackCart SCart)) (Track m xs) = Track (Map.insert c NS m) (CartNav SCart c turns c : xs)
+        f (c, (TrackCart ECart)) (Track m xs) = Track (Map.insert c EW m) (CartNav ECart c turns c : xs)
+        f (c, (TrackCart WCart)) (Track m xs) = Track (Map.insert c EW m) (CartNav WCart c turns c : xs)
+
+getLastCart :: TickResult -> Coord
+getLastCart t@(TickResult _) = getLastCart (tick t)
+getLastCart (Crash _ []) = Coord 0 0
+getLastCart (Crash _ [(_,x)]) = x
+getLastCart (Crash (Track m ys) xs) = case filter f ys of
+                                          [(CartNav _ c _ _)] -> c
+                                          ys' -> getLastCart $ TickResult $ Track m ys'
+  where ids = map fst xs
+        f (CartNav _ _ _ i) = i `notElem` ids
 
 go :: [String] -> Showable
 go xs = let cs = coords (size xs)
             ts = runParser (many parseTrackElement) (concat xs)
             ts' = maybe [] fst ts
             ticks = iterate tick $ TickResult $ initTrack (zip cs ts')
-        in showResult $ head $ dropWhile notCrash ticks
+            a = showResult $ head $ dropWhile notCrash ticks
+            b = getLastCart $ head ticks
+        in pack (a, b)
 
 day13 :: String -> Showable
 day13 = go . lines

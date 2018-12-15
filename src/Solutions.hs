@@ -12,7 +12,7 @@ module Solutions
   , day11
   , day12
   , day13
-  -- , day14
+  , day14
   -- , day15
   -- , day16
   -- , day17
@@ -47,7 +47,7 @@ import Day10 (day10)
 import Day11 (day11)
 import Day12 (day12)
 import Day13 (day13)
--- import Day14 (day14)
+import Day14 (day14)
 -- import Day15 (day15)
 -- import Day16 (day16)
 -- import Day17 (day17)
@@ -66,8 +66,7 @@ solutionMap :: Map Int (String -> Showable)
 solutionMap = fromList
   [ (1, day01), (2, day02), (3, day03), (4, day04), (5, day05), (6, day06)
   , (7, day07), (8, day08), (9, day09), (10, day10), (11, day11), (12, day12)
-  , (13, day13)
-  -- , (14, day14)
+  , (13, day13), (14, day14)
   -- , (15, day15)
   -- , (16, day16)
   -- , (17, day17)

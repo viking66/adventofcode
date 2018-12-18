@@ -14,7 +14,7 @@ module Solutions
   , day13
   , day14
   -- , day15
-  -- , day16
+  , day16
   -- , day17
   -- , day18
   -- , day19
@@ -49,7 +49,7 @@ import Day12 (day12)
 import Day13 (day13)
 import Day14 (day14)
 -- import Day15 (day15)
--- import Day16 (day16)
+import Day16 (day16)
 -- import Day17 (day17)
 -- import Day18 (day18)
 -- import Day19 (day19)
@@ -68,7 +68,7 @@ solutionMap = fromList
   , (7, day07), (8, day08), (9, day09), (10, day10), (11, day11), (12, day12)
   , (13, day13), (14, day14)
   -- , (15, day15)
-  -- , (16, day16)
+  , (16, day16)
   -- , (17, day17)
   -- , (18, day18)
   -- , (19, day19)

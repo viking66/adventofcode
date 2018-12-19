@@ -1,73 +1,59 @@
 module Day14 (day14) where
 
-import Data.Bifunctor (bimap)
 import Data.Char (digitToInt)
+import Data.Foldable (toList)
+import Data.List (isInfixOf, isPrefixOf)
+import Data.Sequence (Seq, (|>))
+import qualified Data.Sequence as Seq
 
 import Parser hiding (digits)
 import Types
 
-data ZipList a = ZipList [a] a [a] [a]
+data Recipes = Recipes (Seq Int) Int Int
+  deriving Show
 
-instance (Show a) => Show (ZipList a) where
-  show = show . toList
-
-data Recipes = Recipes (ZipList Int) (ZipList Int) Int
-
-toList :: ZipList a -> [a]
-toList (ZipList ws x yz zs) = reverse ws ++ (x:yz) ++ reverse zs
+size :: Recipes -> Int
+size (Recipes s _ _) = Seq.length s
 
 recipesToList :: Recipes -> [Int]
-recipesToList (Recipes z _ _) = toList z
-
-focus :: ZipList a -> a
-focus (ZipList _ a _ _) = a
-
-moveRight :: ZipList a -> ZipList a
-moveRight (ZipList ws x (y:ys) zs) = ZipList (x:ws) y ys zs
-moveRight (ZipList ws x [] []) = let (y:ys) = reverse (x:ws)
-                                 in ZipList [] y ys []
-moveRight (ZipList ws x [] zs) = let (y:ys) = reverse zs
-                                 in ZipList (x:ws) y ys []
-
-moveRightN :: Int -> ZipList a -> ZipList a
-moveRightN 0 z = z
-moveRightN n z = moveRightN (n-1) (moveRight z)
-
-append :: a -> ZipList a -> ZipList a
-append a (ZipList ws x ys zs) = ZipList ws x ys (a:zs)
-
-currentRecipes :: Recipes -> (Int, Int)
-currentRecipes (Recipes y z _) = (focus y, focus z)
-
-addRecipe :: Int -> Recipes -> Recipes
-addRecipe n (Recipes y z m) = Recipes (append n y) (append n z) (succ m)
+recipesToList (Recipes s _ _) = toList s
 
 digits :: Int -> [Int]
 digits = map digitToInt . show
 
-updateRecipes :: Recipes -> Recipes
-updateRecipes r = foldl (flip addRecipe) r $ digits $ uncurry (+) $ currentRecipes r
-
-rotateRecipes :: Recipes -> (Int, Int) -> Recipes
-rotateRecipes (Recipes y z n) (a, b) = Recipes (moveRightN a y) (moveRightN b z) n
-
-nextRecipes :: Recipes -> Recipes
-nextRecipes r = rotateRecipes r $ bimap succ succ $ currentRecipes r
-
-recipesLength :: Recipes -> Int
-recipesLength (Recipes _ _ n) = n
-
 initRecipes :: Recipes
-initRecipes = Recipes (ZipList [] 3 [7] []) (ZipList [3] 7 [] []) 2
+initRecipes = Recipes (Seq.fromList [3,7]) 0 1
+
+updateRecipes :: Recipes -> Recipes
+updateRecipes (Recipes s e1 e2) =
+  let move t e = ((Seq.index t e) + 1 + e) `mod` (Seq.length t)
+      xs = digits $ (Seq.index s e1) + (Seq.index s e2)
+      s' = foldl (|>) s xs
+  in Recipes s' (move s' e1) (move s' e2)
 
 go1 :: Int -> String
-go1 n = concatMap show $ take 10 $ drop n $ recipesToList $ go' n initRecipes
-  where go' n r = if recipesLength r >= (n + 10)
-                  then r
-                  else go' n (nextRecipes $ updateRecipes r)
+go1 = concatMap show . toList . go1' initRecipes
+  where go1' r@(Recipes s _ _) n
+          | Seq.length s >= (n + 10) = Seq.take 10 $ Seq.drop n s
+          | otherwise = go1' (updateRecipes r) n
 
-go :: Int -> String
-go n = go1 n
+go2 :: Int -> Int
+go2 n = go2' (digits n) increment
+  where increment :: Int
+        increment = 1000000
+        rs = iterate updateRecipes initRecipes
+        go2' ns a = let r = head $ dropWhile ((< a) . size) rs
+                    in if hasTarget ns r
+                       then count 0 ns (recipesToList r)
+                       else go2' ns (a + increment)
+        hasTarget t r = isInfixOf t (recipesToList r)
+        count _ _ [] = 0
+        count n ns rss@(_:rs) = if isPrefixOf ns rss
+                                then n
+                                else count (succ n) ns rs
+
+go :: Int -> (String, Int)
+go n = (go1 n, go2 n)
 
 parseInput :: String -> Maybe Int
 parseInput = (fst <$>) . runParser number . filter (/= '\n')

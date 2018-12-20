@@ -6,6 +6,7 @@ import qualified Data.Map.Lazy as Map
 
 import Parser
 import Types
+import Util (findCycle)
 
 data Coord = Coord Int Int
   deriving (Show, Eq)
@@ -82,11 +83,9 @@ go1 a = let ls = Map.elems $ iterate updateAcres a !! 10
             l = length $ filter isLumberyard ls
         in l * t
 
--- After some iterations the values will start to cycle.
--- Find where the cycle begins then use that to calulate
--- the final result
-go2 :: Acres -> [Int]
-go2 = take 1000 . map f . iterate updateAcres
+go2 :: Acres -> Int
+go2 as = let (xs, ys) = findCycle $ map f $ iterate updateAcres as
+         in (xs ++ (cycle ys)) !! 1000000000
   where f a = let ls = Map.elems a
                   t = length $ filter isTree ls
                   l = length $ filter isLumberyard ls
